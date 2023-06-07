@@ -14,7 +14,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true)
+@EnableMethodSecurity(
+		securedEnabled = true,
+		jsr250Enabled = true,
+		proxyTargetClass = true)
 public class SecurityConfiguration {
 	
 	@Bean
@@ -22,13 +25,9 @@ public class SecurityConfiguration {
 		InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
 		
 		manager.createUser(
-				User.withUsername("user")
-						.password("password")
-						.roles("USER").build());
-		
-		manager.createUser(
-				User.withUsername("admin")
-						.password("admin")
+				User.withDefaultPasswordEncoder()
+						.username("admin")
+						.password("{noop}admin")
 						.roles("ADMIN").build());
 		
 		return manager;
@@ -36,8 +35,11 @@ public class SecurityConfiguration {
 	
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
+		http.authorizeRequests((authorize) -> authorize
+						.requestMatchers("/salaries/**").hasRole("ADMIN")
+						.anyRequest().authenticated())
 				.httpBasic(withDefaults());
+		
 		return http.build();
 	}
 }
